@@ -3,6 +3,8 @@ import 'package:expense_tracker_app/views/add_expense.dart';
 import 'package:expense_tracker_app/views/home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:expense_tracker_app/models/currency.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 class KursAPIView extends StatefulWidget {
   const KursAPIView({super.key});
@@ -27,7 +29,6 @@ class _KursAPIViewState extends State<KursAPIView> {
     fetchRates();
   }
 
-  /// 🔥 ambil data dari API
   Future<void> fetchRates() async {
     setState(() => _isLoading = true);
 
@@ -46,7 +47,6 @@ class _KursAPIViewState extends State<KursAPIView> {
     setState(() => _isLoading = false);
   }
 
-  /// 🔥 convert
   void convert() {
     if (_data == null) return;
 
@@ -57,10 +57,24 @@ class _KursAPIViewState extends State<KursAPIView> {
     });
   }
 
+  String formatRupiah(int number) {
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(number);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Konversi Mata Uang")),
+      backgroundColor: Colors.green[100],
+      appBar: AppBar(
+        title: const Text("Konversi Mata Uang"),
+        backgroundColor: Colors.green[600],
+        foregroundColor: Colors.white,
+        elevation: 5,
+      ),
 
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -69,19 +83,22 @@ class _KursAPIViewState extends State<KursAPIView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// INPUT NOMINAL
+                  // input nominal (dalam IDR)
                   TextField(
                     controller: _amountController,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(
                       labelText: "Nominal (IDR)",
+                      hintText: "Contoh: 100000",
+                      prefixText: "Rp ",
                       border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.payments),
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 30),
 
-                  /// DROPDOWN DARI API
                   DropdownButtonFormField(
                     initialValue: _selectedCurrency,
                     items: currencies
@@ -100,71 +117,88 @@ class _KursAPIViewState extends State<KursAPIView> {
 
                   const SizedBox(height: 20),
 
-                  /// BUTTON CONVERT
                   SizedBox(
                     width: double.infinity,
+                    height: 50,
                     child: ElevatedButton(
                       onPressed: convert,
-                      child: const Text("Konversi Sekarang"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[600],
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Konversi Sekarang",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 30),
 
-                  /// HASIL
+                  // hasil konversi
                   if (_result != null)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        "Hasil: $_selectedCurrency ${_result!.toStringAsFixed(4)}",
-                        style: const TextStyle(
+                    Center(
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
                           color: Colors.white,
-                          fontSize: 18,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "Hasil: $_selectedCurrency ${_result!.toStringAsFixed(2)}",
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 18,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                 ],
               ),
             ),
-             // bottom navigation bar
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Tambah'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.attach_money_sharp),
-            label: 'Kurs API',
-          ),
-        ],
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => HomeView()),
-            );
-          }
+      // // bottom navigation bar
+      // bottomNavigationBar: BottomNavigationBar(
+      //   backgroundColor: Colors.green[80],
+      //   currentIndex: 0,
+      //   items: const [
+      //     BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Dashboard'),
+      //     BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Tambah'),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.attach_money_sharp),
+      //       label: 'Kurs API',
+      //     ),
+      //   ],
+      //   onTap: (index) {
+      //     if (index == 0) {
+      //       Navigator.pushReplacement(
+      //         context,
+      //         MaterialPageRoute(builder: (_) => HomeView()),
+      //       );
+      //     }
 
-          if (index == 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => AddExpenseView()),
-            );
-          }
+      //     if (index == 1) {
+      //       Navigator.pushReplacement(
+      //         context,
+      //         MaterialPageRoute(builder: (_) => AddExpenseView()),
+      //       );
+      //     }
 
-          if (index == 2) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => KursAPIView()),
-            );
-          }
-        },
-      ),
+      //     if (index == 2) {
+      //       return;
+      //     }
+      //   },
+      // ),
     );
   }
 }

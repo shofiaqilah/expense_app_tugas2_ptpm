@@ -5,8 +5,9 @@ import 'package:expense_tracker_app/views/detail_page.dart';
 import 'package:expense_tracker_app/views/kursAPI_view.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:expense_tracker_app/views/login_view.dart';
+import 'package:intl/intl.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:expense_tracker_app/views/login_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -17,55 +18,66 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   final _controller = ExpenseController();
-  void _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove("isLogin");
+  // void _logout() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.remove("isLogin");
 
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => LoginView()),
-        (route) => false,
-      );
+  //   if (mounted) {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => LoginView()),
+  //       (route) => false,
+  //     );
+  //   }
+  // }
+
+  int hitungSaldo(Box value) {
+    int total = 0;
+    for (int i = 0; i < value.length; i++) {
+      final Expense e = value.getAt(i);
+
+      if (e.type == 'income') {
+        total += e.nominal;
+      } else {
+        total -= e.nominal;
+      }
     }
+    return total;
+  }
+
+  String formatRupiah(int number) {
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(number);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Home"),
-        actions: [IconButton(onPressed: _logout, icon: Icon(Icons.logout))],
-      ),
+      backgroundColor: Colors.green[100],
+      appBar: AppBar(title: Text("Home")),
       body: Padding(
         padding: const EdgeInsets.all(14),
         child: ValueListenableBuilder(
           valueListenable: _controller.expense,
           builder: (context, Box value, child) {
-            /// HITUNG SALDO
-            int total = 0;
-            for (int i = 0; i < value.length; i++) {
-              final Expense e = value.getAt(i);
-
-              if (e.type == 'income') {
-                total += e.nominal;
-              } else {
-                total -= e.nominal;
-              }
-            }
+            final total = hitungSaldo(value);
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.blue,
+                    color: const Color.fromARGB(255, 50, 138, 38),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const Text(
                         "Total Saldo",
@@ -73,26 +85,27 @@ class _HomeViewState extends State<HomeView> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Rp $total",
+                        formatRupiah(total),
                         style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
                           color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                /// 🧾 TITLE LIST
-                const Text(
-                  "Riwayat Transaksi",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                Center(
+                  child: const Text(
+                    "Riwayat Transaksi",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
 
                 Expanded(
                   child: value.isEmpty
@@ -115,20 +128,50 @@ class _HomeViewState extends State<HomeView> {
                                   ),
                                 ),
 
-                                /// TITLE
-                                title: Text(expense.title),
-
-                                /// DATE
-                                subtitle: Text(
-                                  expense.date.toString().split(' ')[0],
+                                leading: CircleAvatar(
+                                  backgroundColor: expense.type == 'income'
+                                      ? Colors.green[100]
+                                      : Colors.red[100],
+                                  child: Icon(
+                                    expense.type == 'income'
+                                        ? Icons.arrow_downward
+                                        : Icons.arrow_upward,
+                                    color: expense.type == 'income'
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
                                 ),
 
-                                /// NOMINAL
+                                // atur title
+                                title: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      expense.title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      expense.date.toString().split(' ')[0],
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      "Rp ${expense.nominal}",
+                                      NumberFormat.currency(
+                                        locale: 'id_ID',
+                                        symbol: 'Rp ',
+                                        decimalDigits: 0,
+                                      ).format(expense.nominal),
                                       style: TextStyle(
                                         color: expense.type == 'income'
                                             ? Colors.green
@@ -174,34 +217,38 @@ class _HomeViewState extends State<HomeView> {
         },
       ),
 
-      // bottom navigation bar
+      // bottom navigation
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.pinkAccent[80],
         currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Tambah'),
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.attach_money_sharp),
+            icon: Icon(Icons.home, color: Colors.green[600]),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add, color: Colors.green[600]),
+            label: 'Tambah',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.attach_money_sharp, color: Colors.green[600]),
             label: 'Kurs API',
           ),
         ],
         onTap: (index) {
           if (index == 0) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => HomeView()),
-            );
+            return;
           }
 
           if (index == 1) {
-            Navigator.pushReplacement(
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => AddExpenseView()),
             );
           }
 
           if (index == 2) {
-            Navigator.pushReplacement(
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => KursAPIView()),
             );
